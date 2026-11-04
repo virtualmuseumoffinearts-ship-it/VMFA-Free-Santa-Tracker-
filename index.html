@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HQ Santa Tracker Pro - Premium Peppermint Radar</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: radial-gradient(circle at center, #100305 0%, #030002 100%);
+            color: #ffd700;
+            width: 100vw;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            padding: 10px;
+            gap: 12px;
+        }
+
+        body:fullscreen { padding: 6px; width: 100vw; height: 100vh; }
+
+        @media (orientation: portrait) {
+            body {
+                transform: rotate(90deg);
+                transform-origin: bottom left;
+                position: absolute;
+                top: -100vw; left: 0;
+                width: 100vh; flex-direction: row;
+            }
+        }
+
+        /* HIGH-DEFINITION METRIC PEPPERMINT RADAR DOCK SCREEN */
+        .visual-viewport {
+            flex: 1.25;
+            position: relative;
+            background: radial-gradient(circle at center, #0a1f3c 0%, #020712 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 6px solid transparent;
+            border-image: repeating-linear-gradient(45deg, #e31b23, #e31b23 12px, #ffffff 12px, #ffffff 24px) 6;
+            box-shadow: 0 0 35px rgba(227, 27, 35, 0.45), inset 0 0 50px rgba(0, 0, 0, 0.9);
+            cursor: pointer;
+        }
+        
+        .fullscreen-prompt-layer {
+            position: absolute;
+            top: 12px; left: 12px; z-index: 10;
+            background: rgba(18, 2, 4, 0.85);
+            padding: 6px 12px; border-radius: 6px;
+            font-family: 'Roboto Mono', monospace; font-size: 0.65rem;
+            color: #ffd700; border: 2px solid #ffd700;
+            text-shadow: 0 0 8px #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            pointer-events: none; letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 2; }
+        .snow-texture { position: absolute; width: 100%; height: 100%; z-index: 1; opacity: 0.12; background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 16px 16px; pointer-events: none; }
+        .hud-dashboard-panel { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+        
+        /* PREMIUM MICA FROSTED GLASS HOLIDAY PANELS WITH FILIGREE ACCENTS */
+        .hud-card {
+            background: linear-gradient(135deg, rgba(42, 6, 12, 0.85) 0%, rgba(18, 2, 4, 0.95) 100%);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 3px solid transparent;
+            border-image: repeating-linear-gradient(45deg, #e31b23, #e31b23 10px, #ffffff 10px, #ffffff 20px) 3;
+            box-shadow: 0 0 25px rgba(227, 27, 35, 0.3), inset 0 0 25px rgba(255, 215, 0, 0.05);
+            border-radius: 14px; padding: 12px; flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Golden corner filigree line simulation anchors */
+        .hud-card::before {
+            content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid rgba(255, 215, 0, 0.15); pointer-events: none; border-radius: 10px;
+        }
+
+        .hud-header { display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 22px rgba(255, 215, 0, 0.25); border-image: linear-gradient(90deg, #ffd700, #b3922e, #ffd700) 3; }
+        .tracker-title { font-size: 0.95rem; font-weight: 900; color: #ffd700; text-shadow: 0 0 12px rgba(255, 215, 0, 0.7); letter-spacing: 0.8px; text-transform: uppercase; }
+        .signal-tag { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: #ffffff; text-shadow: 0 0 8px #ffffff; font-weight: 700; }
+        .telemetry-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .telemetry-block { border-bottom: 1px solid rgba(255, 215, 0, 0.15); padding-bottom: 4px; }
+        .telemetry-lbl { font-size: 0.58rem; color: #caae7a; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .telemetry-val { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: #ffffff; margin-top: 2px; font-weight: 700; text-shadow: 0 0 5px rgba(255,255,255,0.4); }
+        
+        .comms-log-view { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; overflow-y: scroll; color: #f5ebd3; display: flex; flex-direction: column; gap: 5px; padding-right: 4px; flex-grow: 1; }
+        .comms-log-view::-webkit-scrollbar { width: 4px; }
+        .comms-log-view::-webkit-scrollbar-thumb { background-color: #ffd700; border-radius: 2px; box-shadow: 0 0 6px #ffd700; }
+        .log-line { padding: 5px 8px; border-left: 3px solid #ffd700; background: rgba(255, 215, 0, 0.04); flex-shrink: 0; border-radius: 0 6px 6px 0; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+        
+        .bar-container { width: 100%; height: 12px; background: rgba(0, 0, 0, 0.6); border-radius: 6px; overflow: hidden; border: 1px solid #ffd700; margin-top: 5px; box-shadow: inset 0 0 6px rgba(0,0,0,0.8); }
+        .bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #b3922e 0%, #ffd700 50%, #ffffff 100%); box-shadow: 0 0 15px #ffd700; }
+        .footer-txt { display: flex; justify-content: space-between; font-size: 0.72rem; letter-spacing: 0.6px; color: #caae7a; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <!-- VISUAL GRAPHICS SCOPE VIEWPORT -->
+    <div class="visual-viewport" id="leftView" onclick="requestDeviceFullscreen()">
+        <div class="fullscreen-prompt-layer" id="fsPrompt">⚡ HUD NETWORK LINK SECURED</div>
+        <div class="snow-texture"></div>
+        <canvas id="globeCanvas"></canvas>
+    </div>
+
+    <!-- CONTROL PANEL DASHBOARD CONSOLE -->
+    <div class="hud-dashboard-panel" id="rightView">
+        <div class="hud-card hud-header">
+            <div class="tracker-title">✨ GLOBE-TRACKER // GRAND-HQ</div>
+            <div class="signal-tag" id="clock-display">SYS TIME: 00:00:00</div>
+        </div>
+
+        <div class="hud-card telemetry-layout">
+            <div class="telemetry-block">
+                <div class="telemetry-lbl">Active Sector Target</div>
+                <div class="telemetry-val" id="hud-curr">North Pole HQ</div>
+            </div>
+            <div class="telemetry-block">
+                <div class="telemetry-lbl">Next Sector Cluster</div>
+                <div class="telemetry-val" id="hud-next">3D Globe Mesh</div>
+            </div>
+            <div class="telemetry-block">
+                <div class="telemetry-lbl">Sleigh Vector Velocity</div>
+                <div class="telemetry-val" id="hud-speed">0 MACH</div>
+            </div>
+            <div class="telemetry-block">
+                <div class="telemetry-lbl">Cluster Progress Counter</div>
+                <div class="telemetry-val" id="hud-weather">Drop: 1 / 8</div>
+            </div>
+        </div>
+
+        <div class="hud-card" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div style="color: #ffd700; font-size: 0.72rem; margin-bottom: 6px; font-weight: 900; letter-spacing: 0.6px; text-shadow: 0 0 8px rgba(255,215,0,0.4);">🛰️ ORBITAL LIVE SCROLL LOG FEED</div>
+            <div class="comms-log-view" id="log-anchor">
+                <div class="log-line">[SYS] Grand-HD luxury interface initialization sequence verified. Track safe.</div>
+            </div>
+        </div>
+
+        <div class="hud-card">
+            <div class="footer-txt">
+                <span>DELIVERY LOGISTICS MATRIX</span>
+                <span id="hud-gifts" style="color: #ffffff; font-weight: bold; text-shadow: 0 0 4px #ffffff;">Gifts: 0</span>
+            </div>
+            <div class="bar-container">
+                <div class="bar-fill" id="hud-progress"></div>
+            </div>
+        </div>
+    </div>
+        <script>
+        const canvas = document.getElementById('globeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function requestDeviceFullscreen() {
+            let container = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) { container.requestFullscreen(); }
+                else if (container.webkitRequestFullscreen) { container.webkitRequestFullscreen(); }
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+            }
+            setTimeout(syncViewportHeight, 150);
+        }
+
+        function syncViewportHeight() {
+            let realH = window.innerHeight;
+            let finalH = `${realH - 12}px`;
+            document.getElementById('leftView').style.height = finalH;
+            document.getElementById('rightView').style.height = finalH;
+            document.body.style.height = `${realH}px`;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', syncViewportHeight);
+        window.addEventListener('orientationchange', syncViewportHeight);
+        syncViewportHeight();
+
+        const rawCityNames = [
+            "North Pole HQ", "Sydney, AU", "Melbourne, AU", "Auckland, NZ", "Wellington, NZ", 
+            "Tokyo, JP", "Osaka, JP", "Seoul, KR", "Beijing, CN", "Shanghai, CN", 
+            "Hong Kong, HK", "Singapore Sector", "Kuala Lumpur, MY", "Mumbai, IN", "New Delhi, IN", 
+            "Dubai, UAE", "Abu Dhabi, UAE", "Cairo, EG", "Alexandria, EG", "Cape Town, ZA", 
+            "Johannesburg, ZA", "Paris, FR", "Berlin, DE", "Rome, IT", "Madrid, ES", 
+            "London, UK", "Dublin, IE", "Rio de Janeiro, BR", "Sao Paulo, BR", "Buenos Aires, AR", 
+            "New York, US", "Boston, US", "Washington DC, US", "Chicago, US", "Los Angeles, US", 
+            "San Francisco, US", "Honolulu, HI"
+        ];
+
+        const houses = [];
+        const latitudeBands = [-0.6, -0.3, 0.0, 0.3, 0.6]; 
+        const longitudeSectors = 8;                       
+        let cityIndexCounter = 0;
+
+        latitudeBands.forEach((latVal, latIdx) => {
+            for (let i = 0; i < longitudeSectors; i++) {
+                let baseLonAngle = (i * 2 * Math.PI) / longitudeSectors;
+                let organicLon = baseLonAngle + (latIdx * 0.12); 
+                let cityLabelName = rawCityNames[cityIndexCounter % rawCityNames.length];
+                
+                houses.push({
+                    id: houses.length,
+                    name: cityLabelName,
+                    lat: latVal, lon: organicLon,
+                    gifts: 350000000 * (cityIndexCounter + 1),
+                    speed: 55 + Math.floor(Math.random() * 25),
+                    weather: "Active Delivery",
+                    delivered: false,
+                    rareType: "normal",
+                    wasVisibleLastFrame: true 
+                });
+                cityIndexCounter++;
+            }
+        });
+
+        const landmasses = [
+            [ {lat: 0.8, lon: -1.2}, {lat: 0.3, lon: -1.4}, {lat: 0.1, lon: -0.8}, {lat: 0.6, lon: -0.6} ], 
+            [ {lat: -0.1, lon: -0.8}, {lat: -0.6, lon: -0.7}, {lat: -0.3, lon: -0.5} ], 
+            [ {lat: 0.8, lon: -0.2}, {lat: 0.6, lon: 0.1}, {lat: 0.4, lon: -0.1} ], 
+            [ {lat: 0.3, lon: 0.1}, {lat: -0.4, lon: 0.3}, {lat: 0.1, lon: 0.5}, {lat: 0.5, lon: 0.4} ] 
+        ];
+
+        let prevTargetIndex = 0;
+        let currentTargetIndex = 1; 
+        let globeRotation = 0;
+        let flightProgress = 0.0; 
+        let isPausedAtHouse = false; 
+        let pauseTimerStartTime = Date.now();
+        
+        let totalClusterDropsPerLeg = 8;
+        let activeDropCounter = 1;
+
+        const pauseDurationMs = 1500;       
+        const flightDurationSeconds = 7.5;  
+
+        let particlesTrail = [];
+        let radarSweepAngle = 0; 
+        let bezierControlPointX = 0;
+        let bezierControlPointY = 0;
+
+        let snowflakes = [];
+        for (let i = 0; i < 40; i++) { snowflakes.push({ x: Math.random(), y: Math.random(), speed: 0.5 + Math.random() * 1.2, r: 1 + Math.random() * 1.5 }); }
+
+        function lerp(start, end, amt) { return (1 - amt) * start + amt * end; }
+                function drawVectorSnowflake(x, y, size, opacity, strokeColor = '#00ffcc') {
+            ctx.save(); ctx.translate(x, y);
+            ctx.strokeStyle = strokeColor; ctx.lineWidth = 1.4;
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -size); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -size * 0.5); ctx.lineTo(-size * 0.25, -size * 0.7); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, -size * 0.5); ctx.lineTo(size * 0.25, -size * 0.7); ctx.stroke();
+                ctx.rotate(Math.PI / 3);
+            }
+            ctx.restore();
+        }
+
+        function drawRadarCompassScale(cx, cy, r) {
+            ctx.save(); ctx.strokeStyle = 'rgba(255, 215, 0, 0.22)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, 2 * Math.PI); ctx.stroke();
+            for (let deg = 0; deg < 360; deg += 5) {
+                let angle = (deg * Math.PI) / 180;
+                let isMajor = deg % 30 === 0; let tickLen = isMajor ? 11 : 6;
+                let startX = cx + Math.cos(angle) * r; let startY = cy + Math.sin(angle) * r;
+                let endX = cx + Math.cos(angle) * (r - tickLen); let endY = cy + Math.sin(angle) * (r - tickLen);
+                ctx.strokeStyle = isMajor ? 'rgba(255, 215, 0, 0.45)' : 'rgba(255, 215, 0, 0.14)';
+                ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+                if (isMajor && deg % 60 === 0) {
+                    let textX = cx + Math.cos(angle) * (r - 20); let textY = cy + Math.sin(angle) * (r - 20);
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.65)'; ctx.font = 'bold 8px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(String(deg).padStart(2, '0'), textX, textY);
+                }
+            }
+            ctx.restore();
+        }
+
+        function drawGingerbreadHouse(x, y, scale, color, hasDelivered, rareType, isActiveTarget) {
+            ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+            
+            // 1. GRAND WHITE-BLUE IMMERSION NEON GLOW CHASSIS (Tag drop confirmation)
+            if (hasDelivered) {
+                ctx.save();
+                let glowGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 17);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 1.0)'); 
+                glowGrad.addColorStop(0.25, 'rgba(0, 162, 255, 0.85)'); 
+                glowGrad.addColorStop(1, 'rgba(0, 162, 255, 0.0)');   
+                ctx.fillStyle = glowGrad; ctx.beginPath(); ctx.arc(0, 0, 17, 0, 2 * Math.PI); ctx.fill();
+                ctx.restore();
+            }
+
+            // 2. ACTIVE LOCKED RED HORIZON RADAR TARGET AURA
+            if (isActiveTarget && !hasDelivered) {
+                ctx.save();
+                let targetGlow = ctx.createRadialGradient(0, 0, 1, 0, 0, 18);
+                targetGlow.addColorStop(0, 'rgba(255, 30, 85, 0.9)');
+                targetGlow.addColorStop(1, 'rgba(255, 30, 85, 0.0)');
+                ctx.fillStyle = targetGlow; ctx.beginPath(); ctx.arc(0, 0, 18, 0, 2 * Math.PI); ctx.fill();
+                ctx.restore();
+            }
+
+            if (rareType === "snowflake") {
+                drawVectorSnowflake(0, 0, 6.5, 1.0, hasDelivered ? '#00ff66' : '#ffd700');
+            } else if (rareType === "snowman") {
+                ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 2, 4.5, 0, 2 * Math.PI); ctx.fill();
+                ctx.beginPath(); ctx.arc(0, -3, 2.8, 0, 2 * Math.PI); ctx.fill();
+                ctx.fillStyle = hasDelivered ? '#00ff66' : '#e31b23'; ctx.fillRect(-3, -1, 6, 1.4);
+            } else if (rareType === "present") {
+                ctx.fillStyle = hasDelivered ? '#00ff66' : '#e31b23'; ctx.fillRect(-4.5, -2, 9, 7.5); 
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(-5.5, -4, 11, 2); 
+                ctx.fillStyle = '#ffd700'; ctx.fillRect(-1.2, -4, 2.4, 9.5);
+            } else {
+                ctx.fillStyle = hasDelivered ? '#00ff66' : (isActiveTarget ? '#ff1e55' : color); 
+                ctx.fillRect(-4.5, -2, 9, 6.5); 
+                ctx.beginPath(); ctx.moveTo(-6.5, -2); ctx.lineTo(6.5, -2); ctx.lineTo(0, -7.5); ctx.closePath();
+                ctx.fillStyle = '#d4af37'; ctx.fill(); ctx.fillStyle = '#ffffff'; 
+                ctx.beginPath(); ctx.moveTo(-6.5, -2); ctx.lineTo(0, -7.5); ctx.lineTo(6.5, -2); ctx.lineTo(4.5, 0); ctx.lineTo(0, -5.5); ctx.lineTo(-4.5, 0); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#ffeb3b'; ctx.fillRect(-2, 1.5, 1.2, 2.2); ctx.fillRect(1, 1.5, 1.2, 2.2); 
+            }
+            ctx.restore();
+        }
+                function evaluateNextInterestingTarget() {
+            const centerX = canvas.width / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.42;
+            let leftFacingVisibleCandidates = [];
+
+            houses.forEach((house, index) => {
+                if (index === currentTargetIndex) return;
+                let calcLon = house.lon + globeRotation;
+                let x3d = Math.cos(house.lat) * Math.sin(calcLon);
+                let z3d = Math.cos(house.lat) * Math.cos(calcLon);
+                let absoluteScrX = centerX + x3d * radius;
+
+                if (z3d >= 0.2 && absoluteScrX < (centerX - 10)) {
+                    leftFacingVisibleCandidates.push(index);
+                }
+            });
+
+            if (leftFacingVisibleCandidates.length === 0) {
+                for (let i = 0; i < houses.length; i++) {
+                    let idx = (currentTargetIndex + i) % houses.length;
+                    let calcLon = houses[idx].lon + globeRotation;
+                    let x3d = Math.cos(houses[idx].lat) * Math.sin(calcLon);
+                    let z3d = Math.cos(houses[idx].lat) * Math.cos(calcLon);
+                    let absoluteScrX = centerX + x3d * radius;
+                    if (z3d >= 0.1 && absoluteScrX < centerX) return idx;
+                }
+                return (currentTargetIndex + 13) % houses.length;
+            }
+            return leftFacingVisibleCandidates[Math.floor(Math.random() * leftFacingVisibleCandidates.length)];
+        }
+
+        const applicationBootTimestamp = Date.now();
+        const totalCompletionDurationMs = 60 * 60 * 1000; 
+
+        function renderLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const centerX = canvas.width / 2; const centerY = canvas.height / 2;
+            const radius = Math.min(canvas.width, canvas.height) * 0.42;
+            globeRotation += 0.0012; radarSweepAngle += 0.015;
+
+            if (radarSweepAngle > 2 * Math.PI) radarSweepAngle -= 2 * Math.PI;
+
+            if (isPausedAtHouse) {
+                let timeElapsed = Date.now() - pauseTimerStartTime;
+                if (timeElapsed >= pauseDurationMs) {
+                    isPausedAtHouse = false;
+                    
+                    if (activeDropCounter < totalClusterDropsPerLeg) {
+                        let currentSleighHouse = houses[currentTargetIndex];
+                        let clusterNeighbors = [];
+                        
+                        houses.forEach((house, index) => {
+                            if (index === currentTargetIndex || index === prevTargetIndex) return;
+                            let z3d = Math.cos(house.lat) * Math.cos(house.lon + globeRotation);
+                            let spacingDistance = Math.hypot(house.lat - currentSleighHouse.lat, house.lon - currentSleighHouse.lon);
+                            if (z3d >= 0 && spacingDistance < 0.5) { clusterNeighbors.push(index); }
+                        });
+                        
+                        activeDropCounter++; prevTargetIndex = currentTargetIndex;
+                        if (clusterNeighbors.length > 0) {
+                            currentTargetIndex = clusterNeighbors[Math.floor(Math.random() * clusterNeighbors.length)];
+                        } else {
+                            currentTargetIndex = evaluateNextInterestingTarget(); 
+                        }
+                        appendLogMessage(`[MULTI-DROP] Cluster Target ${activeDropCounter}/8 locked inside screen matrix.`);
+                    } else {
+                        activeDropCounter = 1; prevTargetIndex = currentTargetIndex;
+                        currentTargetIndex = evaluateNextInterestingTarget();
+                        appendLogMessage(`[GLOBAL-ROUTE] Cluster clear! Advancing left track vector -> ${houses[currentTargetIndex].name}.`);
+                    }
+                    
+                    flightProgress = 0.0;
+                    
+                    let sH = houses[prevTargetIndex]; let eH = houses[currentTargetIndex];
+                    let x1 = centerX + Math.cos(sH.lat)*Math.sin(sH.lon+globeRotation)*radius;
+                    let y1 = centerY - Math.sin(sH.lat)*radius;
+                    let x2 = centerX + Math.cos(eH.lat)*Math.sin(eH.lon+globeRotation)*radius;
+                    let y2 = centerY - Math.sin(eH.lat)*radius;
+                    let midX = (x1 + x2) / 2; let midY = (y1 + y2) / 2;
+                    let perpX = -(y2 - y1) * 0.45; let perpY = (x2 - x1) * 0.45; 
+                    bezierControlPointX = midX + perpX + (Math.random() * 40 - 20);
+                    bezierControlPointY = midY + perpY + (Math.random() * 40 - 20);
+
+                    triggerHUDUpdates();
+                }
+            } else {
+                flightProgress += (1 / (60 * flightDurationSeconds));
+                if (flightProgress >= 1.0) {
+                    flightProgress = 1.0; isPausedAtHouse = true; pauseTimerStartTime = Date.now();
+                    houses[currentTargetIndex].delivered = true;
+                    appendLogMessage(`[TOUCHDOWN] Package successfully offloaded in ${houses[currentTargetIndex].name}.`);
+                    triggerHUDUpdates();
+                }
+            }
+
+            ctx.fillStyle = '#020b18'; ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI); ctx.fill();
+            drawRadarCompassScale(centerX, centerY, radius);
+
+            // Continents
+            ctx.fillStyle = '#0c243d';
+            landmasses.forEach(polygon => {
+                ctx.beginPath(); let pointsRendered = 0;
+                polygon.forEach((pt) => {
+                    let calcLon = pt.lon + globeRotation;
+                    let x3d = Math.cos(pt.lat) * Math.sin(calcLon); let y3d = Math.sin(pt.lat); let z3d = Math.cos(pt.lat) * Math.cos(calcLon);
+                    if (z3d >= 0) {
+                        let scrX = centerX + x3d * radius; let scrY = centerY - y3d * radius;
+                        if (pointsRendered === 0) ctx.moveTo(scrX, scrY); else ctx.lineTo(scrX, scrY);
+                        pointsRendered++;
+                    }
+                });
+                if (pointsRendered > 2) ctx.fill();
+            });
+                        // Radar Sweeps
+            ctx.save();
+            let sweepGradient = ctx.createRadialGradient(centerX, centerY, radius * 0.1, centerX, centerY, radius);
+            sweepGradient.addColorStop(0, 'rgba(0, 255, 204, 0.14)'); sweepGradient.addColorStop(1, 'rgba(0, 255, 204, 0.0)');
+            ctx.fillStyle = sweepGradient; ctx.beginPath(); ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, radarSweepAngle, radarSweepAngle + 0.35, false);
+            ctx.lineTo(centerX, centerY); ctx.fill();
+            ctx.strokeStyle = 'rgba(0, 255, 204, 0.25)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX + Math.cos(radarSweepAngle) * radius, centerY + Math.sin(radarSweepAngle) * radius); ctx.stroke(); ctx.restore();
+
+            // Snow flakes
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            snowflakes.forEach(sf => {
+                sf.y += sf.speed * 0.0015; if (sf.y > 1) { sf.y = 0; sf.x = Math.random(); }
+                let sX = centerX - radius + (sf.x * radius * 2); let sY = centerY - radius + (sf.y * radius * 2);
+                if (Math.hypot(sX - centerX, sY - centerY) < radius) { ctx.beginPath(); ctx.arc(sX, sY, sf.r, 0, 2 * Math.PI); ctx.fill(); }
+            });
+
+            // Houses Core Grid rendering loop
+            let houseScreenCoords = [];
+            houses.forEach((house, index) => {
+                let calcLon = house.lon + globeRotation;
+                let x3d = Math.cos(house.lat) * Math.sin(calcLon); let y3d = Math.sin(house.lat); let z3d = Math.cos(house.lat) * Math.cos(calcLon);
+                let scrX = centerX + x3d * radius; let scrY = centerY - y3d * radius;
+                houseScreenCoords.push({ x: scrX, y: scrY });
+
+                let currentlyVisible = z3d >= 0;
+
+                if (!currentlyVisible && house.wasVisibleLastFrame) {
+                    house.delivered = false; 
+                    if (Math.random() < 0.04) {
+                        let variants = ["snowflake", "snowman", "present"];
+                        house.rareType = variants[Math.floor(Math.random() * variants.length)];
+                    } else {
+                        house.rareType = "normal";
+                    }
+                }
+                house.wasVisibleLastFrame = currentlyVisible; 
+
+                if (currentlyVisible) {
+                    let nodeColor = '#9c5421'; 
+                    let isActiveTarget = (index === currentTargetIndex);
+                    drawGingerbreadHouse(scrX, scrY, 1.0, nodeColor, house.delivered, house.rareType, isActiveTarget);
+                }
+            });
+
+            // Curve Trajectories
+            let p1 = houseScreenCoords[prevTargetIndex]; let p2 = houseScreenCoords[currentTargetIndex];
+            let sleighScrX = (1 - flightProgress) ** 2 * p1.x + 2 * (1 - flightProgress) * flightProgress * bezierControlPointX + flightProgress ** 2 * p2.x;
+            let sleighScrY = (1 - flightProgress) ** 2 * p1.y + 2 * (1 - flightProgress) * flightProgress * bezierControlPointY + flightProgress ** 2 * p2.y;
+
+            // Strict Linear 20 Minute Progress sync meter
+            let elapsedDurationMs = Date.now() - applicationBootTimestamp;
+            let timelineRatio = Math.min(elapsedDurationMs/ totalCompletionDurationMs, 1.0);
+            let maximumTargetGiftsValue = 16000000000;
+            let continuousSynchronizedGiftsCount = Math.floor((timelineRatio/30)* maximumTargetGiftsValue);
+            
+            document.getElementById('hud-gifts').innerText = `Gifts: ${continuousSynchronizedGiftsCount.toLocaleString()}`;
+            document.getElementById('hud-progress').style.width = `${timelineRatio * 100}%`;
+
+            let sLon = lerp(houses[prevTargetIndex].lon, houses[currentTargetIndex].lon, flightProgress) + globeRotation;
+            let sLat = lerp(houses[prevTargetIndex].lat, houses[currentTargetIndex].lat, flightProgress);
+            let isSantaVisible = (Math.cos(sLat) * Math.cos(sLon) >= 0);
+
+            if (!isPausedAtHouse && isSantaVisible) { particlesTrail.push({ x: sleighScrX, y: sleighScrY, maxAge: 600, age: 600 }); }
+
+            for (let i = particlesTrail.length - 1; i >= 0; i--) {
+                let p = particlesTrail[i]; p.age--;
+                if (p.age <= 0) { particlesTrail.splice(i, 1); continue; }
+                let alpha = p.age / p.maxAge;
+                ctx.save(); ctx.shadowColor = `rgba(255, 215, 0, ${alpha * 0.95})`; ctx.shadowBlur = 4; 
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`; ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, 2 * Math.PI); ctx.fill(); ctx.restore();
+            }
+
+            // Sleigh
+            if (isSantaVisible && sleighScrX && sleighScrY) {
+                ctx.save(); ctx.translate(sleighScrX, sleighScrY);
+                ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.6;
+                ctx.beginPath(); ctx.moveTo(-9, 4); ctx.lineTo(7, 4); ctx.quadraticCurveTo(11, 4, 11, 0); ctx.stroke();
+                ctx.fillStyle = '#b32424'; ctx.beginPath(); ctx.moveTo(8, -1); ctx.lineTo(5, -5); ctx.lineTo(-7, -5); ctx.quadraticCurveTo(-11, -5, -11, -1); ctx.lineTo(-9, 3); ctx.lineTo(7, 3); ctx.closePath(); ctx.fill();
+                ctx.font = '9px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🎅', -2, -3); ctx.restore();
+            }
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        function triggerHUDUpdates() {
+            const current = houses[prevTargetIndex]; const next = houses[currentTargetIndex];
+            if (current && next) {
+                document.getElementById('hud-curr').innerText = current.name;
+                document.getElementById('hud-next').innerText = isPausedAtHouse ? "UNLOADING IN SECTOR..." : next.name;
+                document.getElementById('hud-speed').innerText = isPausedAtHouse ? "0 MACH (PAUSED)" : `${next.speed} MACH`;
+                document.getElementById('hud-weather').innerText = `Drop: ${activeDropCounter} / 8`;
+            }
+        }
+
+        function appendLogMessage(text) {
+            const logBox = document.getElementById('log-anchor');
+            while (logBox.children.length >= 2) { logBox.removeChild(logBox.firstElementChild); }
+            const entry = document.createElement('div'); entry.className = 'log-line'; entry.innerText = text; logBox.appendChild(entry);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        setInterval(() => {
+            const d = new Date();
+            document.getElementById('clock-display').innerText = `SYS TIME: ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+        }, 1000);
+
+        triggerHUDUpdates();
+        setTimeout(syncViewportHeight, 200);
+        requestAnimationFrame(renderLoop);
+    </script>
+</body>
+</html>
